@@ -40,11 +40,24 @@ homicide_df =
   )
 ```
 
-```{r, cache=TRUE}
-homicide_df %>% 
+```{r}
+unsolved_df =
+  homicide_df %>% 
   group_by(city_state) %>% 
-  summarize(total = str_count(disposition), unsolved = (str_count(disposition, "Closed without arrest") + str_count(disposition, "Open/No arrest") ))
+  summarize(total = n(), unsolved = sum(str_count(disposition, c("Closed without arrest", "Open/No arrest"))))
 ```
+
+### Prop.test for Baltimore
+```{r}
+baltimore_test =
+  prop.test(906, 2827) %>% 
+  broom::tidy() 
+  
+baltimore_test %>% 
+  select(estimate, conf.low, conf.high)
+```
+
+
 
 
 ## Question 3
