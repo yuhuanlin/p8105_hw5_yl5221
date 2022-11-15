@@ -31,7 +31,7 @@ scale_fill_discrete = scale_fill_viridis_d
 ## Problem 2
 
 The raw data has 52179 observations of 12 variables, containing date, victim's age, gender, race, sex, name, location, and disposition of the case.
-```{r}
+```{r, cache=TRUE}
 homicide_df =
   read_csv("./homicide-data.csv") %>% 
   mutate(
@@ -39,7 +39,7 @@ homicide_df =
   )
 ```
 
-```{r}
+```{r, cache=TRUE}
 homicide_df %>% 
   group_by(city_state) %>% 
   summarize(total = str_count(disposition), unsolved = (str_count(disposition, "Closed without arrest") + str_count(disposition, "Open/No arrest") ))
@@ -48,7 +48,7 @@ homicide_df %>%
 
 ## Question 3
 writing function
-```{r}
+```{r, cache=TRUE}
 t_test = function(mu) {
   
   sim_data = tibble(
@@ -63,7 +63,7 @@ t_test = function(mu) {
 ```
 
 for μ=0
-```{r}
+```{r, cache=TRUE}
 mean0_df =
   expand_grid(
   mean = 0,
@@ -76,7 +76,7 @@ mean0_df =
 ```
 
 for μ=1:6
-```{r}
+```{r, cache=TRUE}
 multimean_df =
   expand_grid(
   mean = c(1:6),
@@ -86,5 +86,19 @@ multimean_df =
     test_df = map(mean, t_test)
   ) %>% 
   unnest(test_df)
+```
+
+### plot showing power of t.test and true value of mean
+
+When we increase the mean and keep sigma set to 5, the effect size (μ-0)/5 increase. As effect size increases, power of t.test also increases, keeping null hypothesis the same.
+```{r}
+multimean_df %>% 
+  mutate(
+    reject = ifelse(p.value < 0.05, 1, 0)
+  ) %>% 
+  group_by(mean) %>% 
+  summarise(count = n(), reject_count = sum(reject), reject_proportion = reject_count/count) %>%
+  ggplot(aes(x = mean, y = reject_proportion)) + geom_point() + geom_line() + labs(x = "True Mean",y = "Power of T.test",title = "Power of t.test v.s multiple means") + scale_x_continuous(limits = c(1,6), breaks = seq(1:6))
+  
 ```
 
