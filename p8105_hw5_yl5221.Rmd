@@ -1,0 +1,90 @@
+---
+title: "Homework 5"
+output: github_document
+---
+
+```{r setup, include = FALSE}
+library(tidyverse)
+
+set.seed(1)
+library(rvest)
+library(dplyr)
+
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "90%",
+  warning = FALSE,
+  message = FALSE)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+```
+
+## Problem 2
+
+The raw data has 52179 observations of 12 variables, containing date, victim's age, gender, race, sex, name, location, and disposition of the case.
+```{r}
+homicide_df =
+  read_csv("./homicide-data.csv") %>% 
+  mutate(
+    city_state = str_c(city, ", ", state)
+  )
+```
+
+```{r}
+homicide_df %>% 
+  group_by(city_state) %>% 
+  summarize(total = str_count(disposition), unsolved = (str_count(disposition, "Closed without arrest") + str_count(disposition, "Open/No arrest") ))
+```
+
+
+## Question 3
+writing function
+```{r}
+t_test = function(mu) {
+  
+  sim_data = tibble(
+    x = rnorm(mean = mu, n = 30, sd = 5)
+  )
+  
+  sim_result =
+    t.test(sim_data) %>% 
+    broom::tidy() %>% 
+    select(estimate, p.value) 
+}
+```
+
+for μ=0
+```{r}
+mean0_df =
+  expand_grid(
+  mean = 0,
+  iteration = 1:5000
+) %>% 
+  mutate(
+    test_df = map(mean, t_test)
+  ) %>% 
+  unnest(test_df)
+```
+
+for μ=1:6
+```{r}
+multimean_df =
+  expand_grid(
+  mean = c(1:6),
+  iteration = 1:5000
+) %>% 
+  mutate(
+    test_df = map(mean, t_test)
+  ) %>% 
+  unnest(test_df)
+```
+
