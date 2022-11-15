@@ -5,6 +5,7 @@ output: github_document
 
 ```{r setup, include = FALSE}
 library(tidyverse)
+library(patchwork)
 
 set.seed(1)
 library(rvest)
@@ -88,10 +89,10 @@ multimean_df =
   unnest(test_df)
 ```
 
-### plot showing power of t.test and true value of mean
+### Plot showing power of t.test and true value of mean
 
 When we increase the mean and keep sigma set to 5, the effect size (μ-0)/5 increase. As effect size increases, power of t.test also increases, keeping null hypothesis the same.
-```{r}
+```{r, cache=TRUE}
 multimean_df %>% 
   mutate(
     reject = ifelse(p.value < 0.05, 1, 0)
@@ -100,5 +101,30 @@ multimean_df %>%
   summarise(count = n(), reject_count = sum(reject), reject_proportion = reject_count/count) %>%
   ggplot(aes(x = mean, y = reject_proportion)) + geom_point() + geom_line() + labs(x = "True Mean",y = "Power of T.test",title = "Power of t.test v.s multiple means") + scale_x_continuous(limits = c(1,6), breaks = seq(1:6))
   
+```
+
+### Plot of average estimate mean and true value of mean
+
+As power of test increased, the sample average of μ̂  across tests for which the null is rejected becomes closer to true value of μ.They are approximately equal to the true value of μ.
+```{r}
+avg_plot1 =
+  multimean_df %>% 
+  group_by(mean) %>% 
+  summarise(avg = mean(estimate)) %>%
+  ggplot(aes(x = mean, y = avg)) + geom_point() + geom_line() + labs(x = "True Mean",y = "Average Estimate of Mean",title = "Average Estimate Mean v.s True Mean") + scale_x_continuous(limits = c(1,6), breaks = seq(1:6))
+
+avg_plot2 = 
+  multimean_df %>% 
+  mutate(
+    reject = ifelse(p.value < 0.05, 1, 0)
+  )  %>% 
+  filter(reject == 1) %>% 
+  group_by(mean) %>% 
+  summarise(avg = mean(estimate)) %>%
+  ggplot(aes(x = mean, y = avg)) + geom_point() + geom_line() + labs(x = "True Mean",y = "Average Estimate of Mean of Rejected",title = "Average Estimate Mean of Rejected v.s True Mean") + scale_x_continuous(limits = c(1,6), breaks = seq(1:6))
+
+avg_plot1 
+
+avg_plot2
 ```
 
