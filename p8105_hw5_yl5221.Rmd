@@ -5,7 +5,6 @@ output: github_document
 
 ```{r setup, include = FALSE}
 library(tidyverse)
-library(patchwork)
 
 set.seed(1)
 library(rvest)
@@ -75,23 +74,30 @@ This plot suggests high within-subject correlation -- subjects who start above a
 
 ## Problem 2
 
-The raw data has 52179 observations of 12 variables, containing date, victim's age, gender, race, sex, name, location, and disposition of the case.
-```{r, cache=TRUE}
+The raw data has 52179 observations of 12 variables, containing date, victim's age, gender, race, sex, name, location, and disposition of the case. 
+```{r}
 homicide_df =
   read_csv("./data/homicide-data.csv") %>% 
   mutate(
     city_state = str_c(city, ", ", state)
-  )
+  ) 
 ```
-Below is a data frame showing number of total cases and unsolved cases for each city.
+
+Below is a data frame showing number of total cases and unsolved cases for 50 city. There's a Tulsa, AL row I found in the below data frame where state might be entered wrong. I combined it to the Tulsa, OK row.
 ```{r}
 unsolved_df =
   homicide_df %>% 
-  group_by(city_state) %>% 
+  mutate(city_state = case_when(
+   city_state == "Tulsa, AL" ~ "Tulsa, OK",
+  TRUE ~ city_state
+)) %>% 
+group_by(city_state) %>% 
   summarize(total = n(), unsolved = sum(str_count(disposition, c("Closed without arrest", "Open/No arrest"))))
 
 unsolved_df
 ```
+
+
 
 Prop.test for Baltimore
 ```{r}
@@ -106,10 +112,12 @@ Writing function for extracting prop.test estimate and CI
 
 ```{r}
 prop_test <- function(citystate){
-  
+   
+  #defining data to be used
    data <- unsolved_df %>% 
     filter(city_state == citystate) 
   
+  #manipulation of data
     result <- prop.test(data$unsolved, data$total) %>% 
     broom::tidy() %>% 
     select(estimate, conf.low, conf.high)
@@ -118,7 +126,7 @@ prop_test <- function(citystate){
 }
 ```
 
-Test for each city
+Data frame of t.test estimate and CI for each city 
 
 ```{r}
 test_results_df =
@@ -134,6 +142,8 @@ test_results_df
 ```
 
 ### Visualization for estimate and CI for each city
+
+Chicago has the highest estimate of proportion of unsolved cases, while Richmond has the lowest estimate of proportion of unsolved cases.
 ```{r}
   test_results_df %>% 
   mutate(estimate = as.numeric(estimate)) %>% 
@@ -148,10 +158,12 @@ Writing function for extracting t test estimate and p value
 ```{r}
 t_test = function(mu) {
   
+  #defining data to be used
   sim_data = tibble(
     x = rnorm(mean = mu, n = 30, sd = 5)
   )
-  
+ 
+  #manipulation of data
   sim_result =
     t.test(sim_data) %>% 
     broom::tidy() %>% 
@@ -203,14 +215,12 @@ multimean_df %>%
 
 As power of test increased, the sample average of μ̂  across tests for which the null is rejected becomes closer to true value of μ.They are approximately equal to the true value of μ.
 ```{r}
-avg_plot1 =
-  multimean_df %>% 
+multimean_df %>% 
   group_by(mean) %>% 
   summarise(avg = mean(estimate)) %>%
   ggplot(aes(x = mean, y = avg)) + geom_point() + geom_line() + labs(x = "True Mean",y = "Average Estimate of Mean",title = "Average Estimate Mean v.s True Mean") + scale_x_continuous(limits = c(1,6), breaks = seq(1:6))
 
-avg_plot2 = 
-  multimean_df %>% 
+multimean_df %>% 
   mutate(
     reject = ifelse(p.value < 0.05, 1, 0)
   )  %>% 
@@ -219,8 +229,5 @@ avg_plot2 =
   summarise(avg = mean(estimate)) %>%
   ggplot(aes(x = mean, y = avg)) + geom_point() + geom_line() + labs(x = "True Mean",y = "Average Estimate of Mean of Rejected",title = "Average Estimate Mean of Rejected v.s True Mean") + scale_x_continuous(limits = c(1,6), breaks = seq(1:6))
 
-avg_plot1 
-
-avg_plot2
 ```
 
